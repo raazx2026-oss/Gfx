@@ -2,19 +2,15 @@
 #include <android/log.h>
 #include <fstream>
 #include <string>
-#include <cstdlib>
 
 #define LOG_TAG "GameConfig"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-// This is a stub – in a real tool you'd locate the game's config directory.
-// For demonstration, we'll just log.
 void GameConfig::apply(bool fps130, bool iPadView, bool magicBullet) {
     LOGI("GameConfig::apply called");
 
-    // Example: Write to a file in /data/data/com.example.game/files/config.cfg
-    // But we need root or to be the same UID. We'll just simulate.
+    // Change this path to the actual game's config file
     std::string path = "/data/data/com.example.game/files/config.cfg";
     std::ofstream file(path, std::ios::app);
     if (file.is_open()) {
@@ -24,6 +20,6 @@ void GameConfig::apply(bool fps130, bool iPadView, bool magicBullet) {
         file.close();
         LOGI("Config file written");
     } else {
-        LOGE("Failed to open config file");
+        LOGE("Failed to open config file (maybe no permission)");
     }
 }
