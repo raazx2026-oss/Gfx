@@ -1,23 +1,121 @@
-name: C/C++ CI
+
+---
+
+## 🤖 GitHub Actions Workflow
+
+Create the directory `.github/workflows/` and place `build.yml` inside.
+
+### `.github/workflows/build.yml`
+```yaml
+name: Build GFX Library for All ABIs
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags:
+      - 'v*'                # Trigger on version tags
+  workflow_dispatch:         # Allow manual trigger
 
 jobs:
   build:
-
+    name: Build for ${{ matrix.abi }}
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a, x86, x86_64]
     steps:
-    - uses: actions/checkout@v4
-    - name: configure
-      run: ./configure
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
-      run: make distcheck
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Android NDK
+        run: |
+          SDK_ROOT=$ANDROID_HOME
+          echo "y" | sudo ${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.2.9519653"
+          echo "NDK=${SDK_ROOT}/ndk/25.2.9519653" >> $GITHUB_ENV
+
+      - name: Build with CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. \
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK }}/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=${{ matrix.abi }} \
+            -DANDROID_PLATFORM=android-21 \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build .
+
+      - name: Rename output
+        run: mv build/libgfx.so build/libgfx-${{ matrix.abi }}.so
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libgfx-${{ matrix.abi }}
+          path: build/libgfx-${{ matrix.abi }}.so
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/libgfx-arm64-v8a/libgfx-arm64-v8a.so
+          asset_name: libgfx-arm64-v8a.so
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets (armeabi-v7a)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/libgfx-armeabi-v7a/libgfx-armeabi-v7a.so
+          asset_name: libgfx-armeabi-v7a.so
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets (x86)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/libgfx-x86/libgfx-x86.so
+          asset_name: libgfx-x86.so
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets (x86_64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/libgfx-x86_64/libgfx-x86_64.so
+          asset_name: libgfx-x86_64.so
+          asset_content_type: application/octet-stream
