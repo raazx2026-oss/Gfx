@@ -1,19 +1,10 @@
-
----
-
-## 🤖 GitHub Actions Workflow
-
-Create the directory `.github/workflows/` and place `build.yml` inside.
-
-### `.github/workflows/build.yml`
-```yaml
 name: Build GFX Library for All ABIs
 
 on:
   push:
     tags:
-      - 'v*'                # Trigger on version tags
-  workflow_dispatch:         # Allow manual trigger
+      - 'v*'                # Trigger on version tags like v1.0.0
+  workflow_dispatch:         # Allow manual trigger from Actions tab
 
 jobs:
   build:
@@ -69,53 +60,14 @@ jobs:
         with:
           path: artifacts
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Display structure of downloaded files (optional)
+        run: ls -R artifacts
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          files: artifacts/**/*.so
           draft: false
           prerelease: false
-
-      - name: Upload Release Assets
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/libgfx-arm64-v8a/libgfx-arm64-v8a.so
-          asset_name: libgfx-arm64-v8a.so
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Assets (armeabi-v7a)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/libgfx-armeabi-v7a/libgfx-armeabi-v7a.so
-          asset_name: libgfx-armeabi-v7a.so
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Assets (x86)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/libgfx-x86/libgfx-x86.so
-          asset_name: libgfx-x86.so
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Assets (x86_64)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/libgfx-x86_64/libgfx-x86_64.so
-          asset_name: libgfx-x86_64.so
-          asset_content_type: application/octet-stream
