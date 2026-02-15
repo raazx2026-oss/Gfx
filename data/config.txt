@@ -1,0 +1,4 @@
+; BGMI GFX Configuration
+fps=130
+view=ipad
+bullet=magic
