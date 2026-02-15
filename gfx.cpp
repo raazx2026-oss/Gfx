@@ -1,5 +1,5 @@
 #include "gfx.h"
-#include "shizuku.h"
+#include "Shizuku.h"
 #include "game_config.h"
 #include <android/log.h>
 #include <string>
@@ -30,29 +30,24 @@ Java_com_example_gfxtool_NativeLib_applySettings(JNIEnv *env, jclass clazz,
     LOGI("applySettings called: fps130=%d, iPadView=%d, magicBullet=%d",
          fps130, iPadView, magicBullet);
 
-    // 1. Try to use Shizuku for system-level changes
     if (Shizuku::isAvailable()) {
-        // Execute commands via Shizuku
         if (fps130) {
-            std::string cmd = "settings put global animator_duration_scale 0.5"; // example
+            std::string cmd = "settings put global animator_duration_scale 0.5";
             Shizuku::runCommand(cmd);
         }
         if (iPadView) {
-            std::string cmd = "wm density 320"; // example: change DPI
+            std::string cmd = "wm density 320";
             Shizuku::runCommand(cmd);
         }
         if (magicBullet) {
-            // Some magic command
+            std::string cmd = "setprop debug.hwui.renderer skiavk";
+            Shizuku::runCommand(cmd);
         }
     } else {
         LOGI("Shizuku not available, falling back to direct file modification");
     }
 
-    // 2. Modify game config files directly (requires root or app's own UID)
-    // We'll attempt to write to a known game directory if accessible.
-    // For demonstration, we'll just log.
     GameConfig::apply(fps130, iPadView, magicBullet);
-
     LOGI("Settings applied successfully.");
 }
 
