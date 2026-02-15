@@ -1,4 +1,4 @@
-#include "shizuku.h"
+#include "Shizuku.h"
 #include <android/log.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -10,7 +10,6 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-// Shizuku uses a Unix domain socket at /dev/socket/shizuku
 static const char* SHIZUKU_SOCKET = "/dev/socket/shizuku";
 static bool shizukuAvailable = false;
 
@@ -35,15 +34,12 @@ static int connectSocket() {
 }
 
 bool Shizuku::init(int uid) {
-    // Check if Shizuku is available by attempting to connect
     int sock = connectSocket();
     if (sock < 0) {
         shizukuAvailable = false;
         return false;
     }
-    // Send a handshake or auth request (simplified)
-    // In real Shizuku API, you'd need to send the uid and verify.
-    // For demo, we just close.
+    // Real Shizuku handshake would go here
     close(sock);
     shizukuAvailable = true;
     return true;
@@ -59,7 +55,6 @@ bool Shizuku::runCommand(const std::string& command) {
     int sock = connectSocket();
     if (sock < 0) return false;
 
-    // Construct a simple protocol: send command length then command
     uint32_t len = command.size();
     if (write(sock, &len, sizeof(len)) != sizeof(len)) {
         LOGE("Failed to send command length");
@@ -72,7 +67,6 @@ bool Shizuku::runCommand(const std::string& command) {
         return false;
     }
 
-    // Wait for response (optional)
     char result;
     if (read(sock, &result, 1) != 1) {
         LOGE("Failed to read response");
