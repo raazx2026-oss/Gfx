@@ -2,14 +2,18 @@ name: Build and Commit Libraries
 
 on:
   push:
-    branches: [ main ]      # or master, or any branch you want
+    branches: [ main ]          # change to master if needed
     tags:
-      - 'v*'                # optional: also run on tags
-  workflow_dispatch:         # manual trigger
+      - 'v*'
+  workflow_dispatch:
+
+# Grant write permission to the default GITHUB_TOKEN
+permissions:
+  contents: write
 
 jobs:
   build:
-    name: Build for all ABIs
+    name: Build for ${{ matrix.abi }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,7 +36,7 @@ jobs:
 
       - name: Build with CMake
         run: |
-          mkdir build
+          mkdir -p build
           cd build
           cmake .. \
             -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK }}/build/cmake/android.toolchain.cmake \
@@ -45,7 +49,7 @@ jobs:
         run: |
           cp build/libgfx.so libgfx-${{ matrix.abi }}.so
 
-      - name: Upload artifact (optional, for debugging)
+      - name: Upload artifact (optional)
         uses: actions/upload-artifact@v4
         with:
           name: libgfx-${{ matrix.abi }}
@@ -55,11 +59,14 @@ jobs:
     name: Commit libraries to repository
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write      # ensure write access
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # needed to push
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download all built libraries
         uses: actions/download-artifact@v4
@@ -76,5 +83,9 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add *.so
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update built libraries [skip ci]"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update built libraries [skip ci]"
+            git push
+          fi
