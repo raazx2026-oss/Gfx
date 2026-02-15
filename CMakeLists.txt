@@ -6,15 +6,15 @@ set(CMAKE_CXX_STANDARD 11)
 # Find JNI
 find_package(JNI REQUIRED)
 
-# Include directories (root for headers)
+# Include current directory for headers
 include_directories(${JNI_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# All source files in root directory
+# All .cpp files in the root
 file(GLOB LIB_SOURCES "*.cpp")
 
-# Create shared library
+# Build shared library
 add_library(gfx SHARED ${LIB_SOURCES})
 
-# Link libraries
+# Link Android log library
 target_link_libraries(gfx log)
