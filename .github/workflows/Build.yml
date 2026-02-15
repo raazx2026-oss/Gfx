@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - 'v*'                # Trigger on version tags like v1.0.0
-  workflow_dispatch:         # Allow manual trigger from Actions tab
+  workflow_dispatch:         # Allow manual trigger
 
 jobs:
   build:
@@ -60,14 +60,21 @@ jobs:
         with:
           path: artifacts
 
-      - name: Display structure of downloaded files (optional)
-        run: ls -R artifacts
-
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
           files: artifacts/**/*.so
           draft: false
           prerelease: false
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output Download URLs
+        run: |
+          echo "✅ Release created: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+          echo "📦 Raw URLs for .so files:"
+          for file in artifacts/*/*.so; do
+            filename=$(basename "$file")
+            echo "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$filename"
+          done
